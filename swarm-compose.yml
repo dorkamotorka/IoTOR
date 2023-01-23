@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  weather_api:
+    image: aic-weather_api:latest
+    ports:
+      - 4000:4000
+    healthcheck:
+      test: "curl -f http://localhost:4000/health"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  directory_node:
+    image: aic-directory_node:latest
+    ports:
+      - 5000:5000
+    healthcheck:
+      test: "curl -f http://localhost:5000/node/health"
+      interval: 5s       #checks every X seconds if healthy
+      timeout: 5s        #considered failed if no success after X seconds
+      retries: 5         #Number of retries before container is considered unhealthy
+
+  frontend:
+    image: aic-frontend:latest
+    ports:
+      - 5002:5001
+    environment:
+      DIRECTORY_NODE_URL: http://directory_node:5000
+    healthcheck:
+      test: "curl -f http://localhost:5001/health"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  chain_node:
+    image: aic-chain_node:latest
+    env_file: ./chain_node/.env
+    ports:
+      - 9000:9000
+    depends_on:
+      - directory_node
+    healthcheck:
+      test: "curl -f http://localhost:9000/health"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 6

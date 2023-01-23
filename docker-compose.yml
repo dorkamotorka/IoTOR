@@ -1,0 +1,94 @@
+version: "3"
+
+services:
+  weather_api:
+    build:
+      context: ./weather_api
+      args: 
+        - API_PORT=${WEATHER_API_PORT}
+    ports:
+      - ${WEATHER_API_PORT}:${WEATHER_API_PORT}
+    healthcheck:
+      test: "curl -f http://localhost:4000/health"
+      interval: 5s       #checks every X seconds if healthy
+      timeout: 5s        #considered failed if no success after X seconds
+      start_period: 5s   #Grace Period for checks (= doesn't count to total number of fails)
+      retries: 5         #Number of retries before container is considered unhealthy
+
+  directory_node:
+    build:
+      context: ./directory_node
+    ports:
+      - ${DIRECTORY_NODE_PORT}:${DIRECTORY_NODE_PORT}
+    healthcheck:
+      test: "curl -f http://localhost:5000/node/health"
+      interval: 5s
+      timeout: 5s
+      start_period: 5s   #Not supported by swarm mode
+      retries: 5
+
+  frontend:
+    build:
+      context: ./client
+    ports:
+      - 5002:5001
+    environment:
+      DIRECTORY_NODE_URL: http://directory_node:5000
+    healthcheck:
+      test: "curl -f http://localhost:5001/health"
+      interval: 5s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+
+  chain_node:
+    build:
+        context: ./chain_node
+        args:
+          - CHAIN_PORT=${CHAIN_NODE_PORT}
+    env_file: ./chain_node/.env.entry
+    ports:
+      - 9000:9000
+    depends_on:
+      directory_node:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+      restart_policy:
+        max_attempts: 3
+
+  chain_node1:
+    build:
+      context: ./chain_node
+      args: 
+        - CHAIN_PORT=${CHAIN1_NODE_PORT}
+    env_file: ./chain_node/.env.entry
+    ports: 
+      - ${CHAIN1_NODE_PORT}:${CHAIN1_NODE_PORT}
+    depends_on:
+      directory_node:
+        condition: service_healthy
+
+  chain_node2:
+    build:
+      context: ./chain_node
+      args: 
+        - CHAIN_PORT=${CHAIN2_NODE_PORT}
+    env_file: ./chain_node/.env.intermediate
+    ports: 
+      - ${CHAIN2_NODE_PORT}:${CHAIN2_NODE_PORT}
+    depends_on:
+      directory_node:
+        condition: service_healthy
+
+  chain_node3:
+    build:
+      context: ./chain_node
+      args: 
+        - CHAIN_PORT=${CHAIN3_NODE_PORT}
+    env_file: ./chain_node/.env.exit
+    ports: 
+      - ${CHAIN3_NODE_PORT}:${CHAIN3_NODE_PORT}
+    depends_on:
+      directory_node:
+        condition: service_healthy

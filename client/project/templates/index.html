@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+
+<form method="post">
+    <input type="submit" value="Get Weather" class="bg-blue-500 text-white">
+</form>
+
+{% if response %}
+{% if response.result %}
+<div class="row">
+<div class="col-3">
+<div class="card">
+    <div class="card__container">
+        <div class="card__image" style="background-image: url(&quot;/assets/weather.jpg&quot;"></img></div>
+        <div class="card__title-container">
+            <p class="title">Weather</p><span class="subtitle">{{ response.result.date }}</span></div>
+    </div>
+    <div class="content px-1 pt-2">
+    <ul class="no-bullets">
+        <!-- https://docs.opendata.aws/noaa-ghcn-pds/readme.html -->
+        <li><b>Temperature:</b> {{ response.result.tmin }} - {{ response.result.tmax }} °F</li>
+        <li><b>Precipitation:</b> {{ response.result.prcp }} mm</li>
+        <li><b>Average wind:</b> {{ response.result.awnd }} mph</li>
+        <li><b>Snowfall:</b> {{ response.result.snow }} mm</li>
+        <li><b>Snow depth:</b> {{ response.result.snwd }} mm</li>
+    </ul>
+    </div>
+</div>
+</div>
+
+<div class="col-9">
+
+<div class="card">
+    <div class="content px-3 pt-1">
+        <h6>Response</h6>
+        <pre><code data-lang>{{ response.result }}</code></pre>
+    </div>
+</div>
+
+<div class="card">
+    <div class="content px-3 pt-1">
+        <h6>Routing chain</h6>
+
+        <div class="table-container">
+        <table class="table bordered" style="margin-bottom: 0">
+            <thead style="text-align: left;">
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+            </tr>
+            </thead>
+            <tbody style="text-align: left;">
+            {% for node in response.chain %}
+            <tr>
+            <td>{{ node.name }}</td>
+            <td>{{ node.address }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if response.logs %}
+{% if response.result %}
+<div class="card">
+    <div class="content px-3 pt-1">
+        <h6>Message routing / encryption</h6>
+        <div class="table-container">
+        <table class="table bordered" style="margin-bottom: 0">
+            <thead style="text-align: left;">
+            <tr>
+                <th>Envelope</th>
+                <th>Session key</th>
+                <th>Public key</th>
+                <th>Payload</th>
+                <th>Result</th>
+            </tr>
+            </thead>
+            <tbody style="text-align: left;">
+            {% for message in response.logs[-3:] %}
+            <tr>
+            <td>{{ message.envelope }}</td>
+            <td>{{ message.session_key }}</td>
+            <td>{{ message.public_key }}</td>
+            <td>{{ message.payload }}</td>
+            <td>{{ message.result }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+    </div>
+</div>
+</div>
+
+</div>
+{% else %}
+<div class="px-1 pt-1">
+    <h6>Failure logs</h6>
+    <div class="table-container">
+    <table class="table bordered" style="margin-bottom: 0">
+        <thead style="text-align: left;">
+        <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody style="text-align: left;">
+        {% for log in response.logs %}
+        <tr>
+        <td>{{ log.date }}</td>
+        <td>{{ log.time }}</td>
+        <td>{{ log.message }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
+{% endblock %}
